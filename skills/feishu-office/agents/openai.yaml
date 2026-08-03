@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feishu Office"
+  short_description: "Route everyday Feishu work through the official CLI"
+  default_prompt: "Use $feishu-office to summarize recent Feishu chats and append the decisions to a document."
