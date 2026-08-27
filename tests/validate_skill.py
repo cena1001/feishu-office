@@ -104,20 +104,22 @@ def validate_skill() -> None:
     text = SKILL_FILE.read_text(encoding="utf-8")
     frontmatter = parse_frontmatter(text)
     description = frontmatter["description"].casefold()
-    for trigger in ("feishu", "chat history", "action items", "docx", "meeting", "whiteboards"):
+    for trigger in (
+        "feishu",
+        "chat analysis",
+        "action items",
+        "docx",
+        "meeting",
+        "whiteboards",
+        "marlow flow",
+    ):
         require(trigger in description, f"description is missing a branch trigger: {trigger}")
-
-    routing_heading = text.index("## Routing")
-    shared_command = "lark-cli skills read lark-shared --json"
-    require(shared_command in text[:routing_heading], "lark-shared must be read before routing")
 
     expected_routes = {
         "People and directory": {"lark-contact"},
         "Chats and messages": {"lark-im"},
         "Docx or Wiki document content": {"lark-doc"},
-        "Ended meeting discovery or artifacts": {"lark-vc"},
-        "Minutes token, URL, or local media": {"lark-minutes"},
-        "Known Note ID or resolved unified transcript": {"lark-note"},
+        "Ended meeting, Note, Minutes, or local media": {"lark-meeting"},
         "Multi-meeting recap or report": {"lark-workflow-meeting-summary"},
         "Whiteboards": {"lark-whiteboard"},
     }
@@ -140,8 +142,10 @@ def validate_skill() -> None:
         require(all(term in chat for term in terms), f"Chat Analysis is missing {label}")
 
     commands = re.findall(r"(?m)^[ \t]*(lark-cli\s+[^\n]+)$", text)
+    require(commands == [], "SKILL.md must not copy concrete lark-cli commands")
     require(
-        commands == [shared_command], "SKILL.md must contain only the shared skills-read command"
+        all(stale not in text for stale in ("`lark-vc`", "`lark-minutes`", "`lark-note`")),
+        "routing still contains pre-1.0.89 meeting Skills",
     )
     for pattern, label in {
         r"whiteboard\s+\+query\b": "stale whiteboard command",
@@ -245,7 +249,7 @@ def validate_repository_metadata() -> None:
     readme = README_FILE.read_text(encoding="utf-8")
     for requirement in (
         "https://github.com/larksuite/cli",
-        "lark-cli >= 1.0.53",
+        "lark-cli >= 1.0.89",
         "npx @larksuite/cli@latest install",
         "npx skills add . -g",
         "npx skills add cena1001/feishu-office -g",
@@ -253,6 +257,7 @@ def validate_repository_metadata() -> None:
         "npx skills update feishu-office -g",
         "https://github.com/vercel-labs/skills",
         "MarlowStyle",
+        "lark-meeting",
     ):
         require(requirement in readme, f"README.md must contain: {requirement}")
     require(
