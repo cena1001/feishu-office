@@ -1,6 +1,8 @@
 .DS_Store
 .env
 node_modules/
+__pycache__/
+*.py[cod]
 
 # Local design records are not published.
 docs/plans/

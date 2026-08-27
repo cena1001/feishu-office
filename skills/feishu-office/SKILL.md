@@ -1,16 +1,12 @@
 ---
 name: feishu-office
-description: "Use when Feishu or Lark work involves resolving people, analyzing chat history for decisions or action items, working with Docx or Wiki documents, reviewing ended-meeting artifacts or Minutes, editing whiteboards, or applying MarlowStyle."
+description: "Use when Feishu or Lark work involves people lookup, chat analysis for decisions or action items, Docx or Wiki document edits, ended-meeting artifacts or Minutes, editable whiteboards, MarlowStyle, Marlow Flow, or the user's whiteboard style."
 ---
 
 # Feishu Office
 
 Use this Skill as a thin coordinator. Treat the embedded Skills in the running
 CLI as the source of truth; never copy or guess business commands.
-
-Read the shared setup and safety guidance first:
-
-lark-cli skills read lark-shared --json
 
 ## Routing
 
@@ -19,9 +15,7 @@ lark-cli skills read lark-shared --json
 | People and directory | `lark-contact` |
 | Chats and messages | `lark-im` |
 | Docx or Wiki document content | `lark-doc` |
-| Ended meeting discovery or artifacts | `lark-vc` |
-| Minutes token, URL, or local media | `lark-minutes` |
-| Known Note ID or resolved unified transcript | `lark-note` |
+| Ended meeting, Note, Minutes, or local media | `lark-meeting` |
 | Multi-meeting recap or report | `lark-workflow-meeting-summary` |
 | Whiteboards | `lark-whiteboard` |
 
@@ -32,10 +26,11 @@ The meeting routes cover ended meetings, existing Note or Minutes artifacts,
 and local-media conversion. Scheduling, future calendar events, and in-progress
 meetings stay with their own official Skills and are not coordinated here.
 
-After selecting a route, read each listed Skill with
-`lark-cli skills read <skill> --json`. If its current instructions point to an
-official reference, read that reference on demand through the same `skills read`
-interface and follow the exact path it provides.
+After selecting a route, read each listed Skill through the CLI's `skills read`
+interface. Follow its current prerequisites and read any referenced official
+guidance on demand through the same interface. Do not pre-read `lark-shared`
+unless the selected Skill requires it or the task involves authentication,
+permissions, notices, or updates.
 
 Read `lark-contact` in addition to `lark-im` only when person resolution or
 directory data is required.
@@ -61,15 +56,20 @@ directory data is required.
    boundary before analysis or drafting.
 2. For a multi-domain request, finish every upstream read and analysis step
    before any downstream write.
-3. Follow the current official risk guidance for every write. Preview or confirm
-   risky or ambiguous writes, and verify by reading back only when that guidance
-   requires it.
-4. Return the synthesized result and distinguish completed writes, drafts, and
+3. Before editing an existing cloud document after a non-trivial read or draft
+   gap, read the target again and account for concurrent changes. Follow the
+   current `lark-doc` block-level workflow; preserve unrelated content and
+   structured blocks such as mentions and whiteboards instead of flattening them.
+4. Follow the current official risk guidance for every write. Preview or confirm
+   risky or ambiguous writes, then read back changed and protected blocks when
+   required by that guidance.
+5. Return the synthesized result and distinguish completed writes, drafts, and
    incomplete branches.
 
 For a whiteboard, load `references/marlow-style.md` only when the user explicitly
-names MarlowStyle or asks for “my style”. The bundled
-`assets/marlow-style.png` is its visual preview.
+names MarlowStyle, Marlow Flow, or asks for “my style”. Deliver an editable native
+whiteboard by default; use a static image only as a preview or verification
+artifact. The bundled `assets/marlow-style.png` is its visual preview.
 
 ## Updates and Failures
 
