@@ -1,22 +1,23 @@
 ---
 name: feishu-office
-description: "Use when Feishu or Lark work involves people lookup, chat analysis for decisions or action items, Docx or Wiki document edits, ended-meeting artifacts or Minutes, editable whiteboards, MarlowStyle, Marlow Flow, or the user's whiteboard style."
+description: "Use for everyday Feishu or Lark work involving people lookup; chat reading, analysis, decisions, or action items; Docx or Wiki analysis or edits; meeting artifacts; Feishu Project issues; editable whiteboards; MarlowStyle, Marlow Flow, or the user's whiteboard style."
 ---
 
 # Feishu Office
 
-Use this Skill as a thin coordinator. Treat the embedded Skills in the running
-CLI as the source of truth; never copy or guess business commands.
+Use this Skill as a thin coordinator. Treat the routed official Skills provided
+by installed CLIs as the source of truth; never copy or guess business commands.
 
 ## Routing
 
-| Request | Read these embedded Skills |
+| Request | Route |
 | --- | --- |
 | People and directory | `lark-contact` |
 | Chats and messages | `lark-im` |
 | Docx or Wiki document content | `lark-doc` |
 | Ended meeting, Note, Minutes, or local media | `lark-meeting` |
 | Multi-meeting recap or report | `lark-workflow-meeting-summary` |
+| Feishu Project Issue or work item | Installed official `meegle` Skill; otherwise `references/feishu-project.md` |
 | Whiteboards | `lark-whiteboard` |
 
 Choose the narrowest matching row. Combine rows only for a cross-domain request
@@ -25,12 +26,16 @@ or when the selected official Skill hands off to another domain.
 The meeting routes cover ended meetings, existing Note or Minutes artifacts,
 and local-media conversion. Scheduling, future calendar events, and in-progress
 meetings stay with their own official Skills and are not coordinated here.
+Route the content of a Docx or Wiki meeting-summary document through `lark-doc`;
+use `lark-meeting` for meeting metadata, transcripts, Note, Minutes, or media.
 
-After selecting a route, read each listed Skill through the CLI's `skills read`
-interface. Follow its current prerequisites and read any referenced official
+For a `lark-*` route, read each listed Skill through the CLI's `skills read`
+interface. Follow its current prerequisites and read referenced official
 guidance on demand through the same interface. Do not pre-read `lark-shared`
 unless the selected Skill requires it or the task involves authentication,
-permissions, notices, or updates.
+permissions, notices, or updates. For a Project route, use the separately
+installed official `meegle` Skill when available; otherwise read the local
+fallback reference before deciding whether the task can continue.
 
 Read `lark-contact` in addition to `lark-im` only when person resolution or
 directory data is required.
@@ -52,8 +57,9 @@ directory data is required.
 
 ## Workflow
 
-1. Complete the required reads for the selected scope, or record the exact
-   boundary before analysis or drafting.
+1. Close the evidence graph for the requested scope: follow task-relevant links
+   and inspect decision-relevant embedded images, whiteboards, chat attachments,
+   or meeting artifacts. Record every unread branch and why.
 2. For a multi-domain request, finish every upstream read and analysis step
    before any downstream write.
 3. Before editing an existing cloud document after a non-trivial read or draft
@@ -73,10 +79,10 @@ artifact. The bundled `assets/marlow-style.png` is its visual preview.
 
 ## Updates and Failures
 
-Follow the current `lark-shared` guidance for authentication, safety, notices,
-and updates. Treat a CLI update as a separate, explicitly confirmed global
-mutation.
+Follow the current `lark-shared` guidance for `lark-cli` authentication, safety,
+notices, and updates, and the official `meegle` guidance for Project auth and
+safety. Treat any CLI update as a separate, explicitly confirmed global mutation.
 
-If the CLI or any required embedded guidance is unavailable, stop and report the
-exact failed `skills read` command. Resume only when current official guidance is
-available.
+If a required `lark-*` Skill is unavailable, stop and report the exact failed
+`skills read` request. Project work follows the capability order in its fallback
+reference instead of assuming browser access.

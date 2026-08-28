@@ -15,10 +15,13 @@ SKILL_ROOT = ROOT / "skills" / "feishu-office"
 SKILL_FILE = SKILL_ROOT / "SKILL.md"
 OPENAI_FILE = SKILL_ROOT / "agents" / "openai.yaml"
 STYLE_FILE = SKILL_ROOT / "references" / "marlow-style.md"
+PROJECT_FILE = SKILL_ROOT / "references" / "feishu-project.md"
 PREVIEW_FILE = SKILL_ROOT / "assets" / "marlow-style.png"
 README_FILE = ROOT / "README.md"
 LICENSE_FILE = ROOT / "LICENSE"
 GITIGNORE_FILE = ROOT / ".gitignore"
+WORKFLOW_FILE = ROOT / ".github" / "workflows" / "validate.yml"
+LARK_VALIDATOR_FILE = ROOT / "tests" / "validate_lark_cli.py"
 
 
 class ValidationError(Exception):
@@ -38,7 +41,7 @@ def display_path(path: Path) -> str:
 
 def validate_required_files() -> None:
     """Require the complete minimal public Skill package."""
-    for path in (SKILL_FILE, OPENAI_FILE, STYLE_FILE, PREVIEW_FILE):
+    for path in (SKILL_FILE, OPENAI_FILE, STYLE_FILE, PROJECT_FILE, PREVIEW_FILE):
         require(path.is_file(), f"missing required file: {display_path(path)}")
 
 
@@ -95,7 +98,7 @@ def parse_routes(routing: str) -> dict[str, set[str]]:
         cells = [cell.strip() for cell in line.strip("|").split("|")]
         if len(cells) < 2 or cells[0] == "Request":
             continue
-        routes[cells[0]] = set(re.findall(r"\blark-[a-z0-9-]+\b", " ".join(cells[1:])))
+        routes[cells[0]] = set(re.findall(r"\b(?:lark-[a-z0-9-]+|meegle)\b", " ".join(cells[1:])))
     return routes
 
 
@@ -106,10 +109,11 @@ def validate_skill() -> None:
     description = frontmatter["description"].casefold()
     for trigger in (
         "feishu",
-        "chat analysis",
+        "chat reading",
         "action items",
         "docx",
         "meeting",
+        "project issues",
         "whiteboards",
         "marlow flow",
     ):
@@ -121,6 +125,7 @@ def validate_skill() -> None:
         "Docx or Wiki document content": {"lark-doc"},
         "Ended meeting, Note, Minutes, or local media": {"lark-meeting"},
         "Multi-meeting recap or report": {"lark-workflow-meeting-summary"},
+        "Feishu Project Issue or work item": {"meegle"},
         "Whiteboards": {"lark-whiteboard"},
     }
     routes = parse_routes(section(text, "Routing"))
@@ -160,6 +165,19 @@ def validate_skill() -> None:
         "lark-shared" in updates and "global" in updates,
         "update policy must delegate to lark-shared",
     )
+
+
+def validate_project_fallback() -> None:
+    """Require a capability-aware and write-safe Feishu Project fallback."""
+    text = " ".join(PROJECT_FILE.read_text(encoding="utf-8").casefold().split())
+    concept_groups = {
+        "official Meegle route": ("official `meegle` skill", "auth", "pagination"),
+        "authenticated browser fallback": ("authenticated browser", "exact url", "untrusted"),
+        "read-only write boundary": ("read-only", "explicit confirmation", "read the result back"),
+        "native card verification": ("native issue card", "`url-preview`", "ordinary link"),
+    }
+    for label, terms in concept_groups.items():
+        require(all(term in text for term in terms), f"Project fallback is missing {label}")
 
 
 def validate_openai_metadata() -> None:
@@ -243,14 +261,16 @@ def validate_png_structure() -> None:
 
 def validate_repository_metadata() -> None:
     """Validate public documentation, attribution, and ignore rules."""
-    for path in (README_FILE, LICENSE_FILE, GITIGNORE_FILE):
+    for path in (README_FILE, LICENSE_FILE, GITIGNORE_FILE, WORKFLOW_FILE, LARK_VALIDATOR_FILE):
         require(path.is_file(), f"missing required file: {display_path(path)}")
 
     readme = README_FILE.read_text(encoding="utf-8")
     for requirement in (
         "https://github.com/larksuite/cli",
+        "https://github.com/larksuite/meegle-cli",
         "lark-cli >= 1.0.89",
         "npx @larksuite/cli@latest install",
+        "npx @lark-project/meegle@latest install",
         "npx skills add . -g",
         "npx skills add cena1001/feishu-office -g",
         "lark-cli update --check --json",
@@ -258,6 +278,7 @@ def validate_repository_metadata() -> None:
         "https://github.com/vercel-labs/skills",
         "MarlowStyle",
         "lark-meeting",
+        "Project Issue",
     ):
         require(requirement in readme, f"README.md must contain: {requirement}")
     require(
@@ -267,6 +288,15 @@ def validate_repository_metadata() -> None:
         readme.index("git pull") < readme.index("npx skills add . -g -y"),
         "local update order is invalid",
     )
+
+    workflow = WORKFLOW_FILE.read_text(encoding="utf-8")
+    for requirement in (
+        "schedule:",
+        "workflow_dispatch:",
+        "npm install --global @larksuite/cli@latest",
+        "python3 tests/validate_lark_cli.py",
+    ):
+        require(requirement in workflow, f"validate.yml must contain: {requirement}")
 
     license_text = LICENSE_FILE.read_text(encoding="utf-8")
     for requirement in (
@@ -299,6 +329,7 @@ def main() -> int:
     try:
         validate_required_files()
         validate_skill()
+        validate_project_fallback()
         validate_openai_metadata()
         validate_style()
         validate_png_structure()

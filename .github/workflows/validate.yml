@@ -3,6 +3,9 @@ name: Validate
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 2 * * 1"
 
 permissions:
   contents: read
@@ -21,3 +24,20 @@ jobs:
 
       - name: Validate Skill package
         run: python3 tests/validate_skill.py
+
+  latest-lark-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "lts/*"
+
+      - name: Install latest published lark-cli
+        run: npm install --global @larksuite/cli@latest
+
+      - name: Validate routed official Skills
+        run: python3 tests/validate_lark_cli.py
